@@ -196,7 +196,7 @@ export default function PatientDashboard() {
               <Stack direction="row" spacing={2} mb={2}>
                 <Box flex={1}>
                   <img
-                    src={selectedDoctor.idProof ? `http://localhost:5000/uploads/${selectedDoctor.idProof}` : "/default-doctor.jpg"}
+                    src={selectedDoctor.idProof ?  `http://localhost:5000/${selectedDoctor.idProof.replace(/^\/+/, "")}` : "/default-doctor.jpg"}
                     alt={selectedDoctor.name || "Doctor"}
                     style={{ width: "100%", borderRadius: "8px" }}
                   />

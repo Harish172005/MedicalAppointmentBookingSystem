@@ -63,7 +63,6 @@ const EditProfileDoctor = () => {
     if (doctorId) fetchDoctorDetails(doctorId);
   }, [doctorId]);
 
-  // handle input update
   const handleChange = (e) =>
     setDoctorData({ ...doctorData, [e.target.name]: e.target.value });
 
@@ -74,7 +73,7 @@ const EditProfileDoctor = () => {
 
     setSaving(true);
     try {
-      await API.put(`/doctors/${doctorId}`, doctorData);
+      await API.put(`/doctor/${doctorId}`, doctorData);
       setSuccessMessage("Profile updated successfully!");
     } catch (err) {
       console.error("Error updating profile:", err);
@@ -112,6 +111,17 @@ const EditProfileDoctor = () => {
               value={doctorData.email}
               onChange={handleChange}
               required
+            />
+          </Form.Group>
+           <Form.Group className="mb-3">
+            <Form.Label>Phone Number</Form.Label>
+            <Form.Control
+              type="String"
+              name="phone"
+              value={doctorData.phone}
+              onChange={handleChange}
+              placeholder=""
+              min="0"
             />
           </Form.Group>
 

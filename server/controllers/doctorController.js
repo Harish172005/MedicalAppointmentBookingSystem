@@ -217,11 +217,12 @@ export const updateDoctor = async (req, res) => {
     const {
       name,
       email,
-      password,
+      phone,
+      gender,
       specialization,
       qualification,
-      Experience,
-      Region,
+      experience,
+      region,
       bio
     } = req.body;
 
@@ -233,24 +234,21 @@ export const updateDoctor = async (req, res) => {
     if (!doctor) {
       return res.status(404).json({ message: "Doctor not found" });
     }
-
     const user = doctor.user;
-
     // 2️⃣ Update User details
     if (name) user.name = name;
     if (email) user.email = email;
+    if (phone) user.phone = phone;
+    if (gender) user.gender = gender;
 
-    if (password) {
-      user.password = await bcrypt.hash(password, 10);
-    }
 
     await user.save();
 
     // 3️⃣ Update Doctor details
     if (specialization) doctor.specialization = specialization;
     if (qualification) doctor.qualification = qualification;
-    if (Experience) doctor.Experience = Experience;
-    if (Region) doctor.Region = Region;
+    if (experience) doctor.Experience = experience;
+    if (region) doctor.Region = region;
     if (bio) doctor.bio = bio;
 
     // Update ID proof only if new file uploaded

@@ -9,7 +9,7 @@ export default function Register() {
     name: "",
     email: "",
     password: "",
-    role: "patient",
+    role: "",
     specialization: "",
     Experience: "",
     Region: "",

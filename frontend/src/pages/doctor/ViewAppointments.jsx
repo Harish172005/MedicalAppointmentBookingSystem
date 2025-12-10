@@ -1,139 +1,166 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import {
+  Box,
+  Typography,
+  Card,
+  CardContent,
+  Chip,
+  CircularProgress,
+  Grid,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+} from "@mui/material";
 import API from "../../utils/axios";
 import { getDoctorProfile } from "../../api/doctor";
 
-const ManageAvailability = () => {
+const ViewAppointments = () => {
+  const [appointments, setAppointments] = useState([]);
   const [doctorId, setDoctorId] = useState(null);
-  const [availability, setAvailability] = useState([]);
-  const [newDate, setNewDate] = useState("");
-  const [selectedSlot, setSelectedSlot] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  const timeSlotsList = ["09:00 AM", "11:00 AM", "02:00 PM", "04:00 PM"];
-
-  // 1️⃣ Load Doctor ID from backend
+  // Load doctor ID
   const loadDoctorId = async () => {
     try {
       const res = await getDoctorProfile();
-      const id = res.data._id; // Doctor Model ID
-      setDoctorId(id);
-      console.log("Doctor ID Loaded:", id);
+      setDoctorId(res.data._id);
     } catch (err) {
-      console.error("Failed to load doctor ID:", err);
+      console.error("Error loading doctor profile:", err);
     }
   };
 
-  // 2️⃣ Fetch availability
-  const fetchAvailability = async (id) => {
+  // Fetch appointments
+  const fetchAppointments = async (id) => {
     try {
-      const res = await API.get(`/availability/${id}`);
-      setAvailability(res.data);
+      const response = await API.get(`/appointments/doctor/${id}`);
+      setAppointments(response.data || []);
+      // console.log(appt.patientPhone)
     } catch (error) {
-      console.error("Error fetching availability:", error);
+      console.error("Error fetching appointments:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // 3️⃣ Add availability
-  const handleAddAvailability = async () => {
-    if (!newDate || !selectedSlot) {
-      return alert("Please choose date and time slot");
-    }
-
+  // Update appointment status
+  const updateStatus = async (appointmentId, newStatus) => {
     try {
-      const res = await API.post(`/availability/${doctorId}`, {
-        date: newDate,
-        slots: [selectedSlot],
+      await API.put(`/appointments/${appointmentId}/status`, {
+        status: newStatus,
       });
 
-      const updated = res.data;
-
-      setAvailability((prev) => {
-        const exists = prev.find((a) => a.date === newDate);
-        if (exists) {
-          return prev.map((a) => (a.date === newDate ? updated : a));
-        }
-        return [...prev, updated];
-      });
-
-      setNewDate("");
-      setSelectedSlot("");
-
-    } catch (error) {
-      console.error("Error adding availability:", error);
-      alert(error.response?.data?.message || "Failed to add availability");
+      // Update UI instantly without refetching
+      setAppointments((prev) =>
+        prev.map((a) =>
+          a._id === appointmentId ? { ...a, status: newStatus } : a
+        )
+      );
+    } catch (err) {
+      console.error("Error updating status:", err);
     }
   };
 
-  // 4️⃣ Delete availability
-  const handleDeleteAvailability = async (id) => {
-    try {
-      await API.delete(`/availability/${id}`);
-      setAvailability((prev) => prev.filter((a) => a._id !== id));
-    } catch (error) {
-      console.error("Error deleting availability:", error);
-    }
-  };
-
-  // Load doctorId first → then fetch availability
   useEffect(() => {
     loadDoctorId();
   }, []);
 
   useEffect(() => {
-    if (doctorId) fetchAvailability(doctorId);
+    if (doctorId) fetchAppointments(doctorId);
   }, [doctorId]);
 
+  const statusColor = (status) => {
+    switch (status) {
+      case "approved":
+        return "success";
+      case "rejected":
+        return "error";
+      case "completed":
+        return "primary";
+      default:
+        return "warning";
+    }
+  };
+
+  // Allowed next statuses
+  const getAllowedStatusOptions = (status) => {
+    if (status === "pending") return ["pending", "approved", "rejected"];
+    if (status === "approved") return ["approved", "completed"];
+    if (status === "rejected") return ["rejected"];
+    if (status === "completed") return ["completed"];
+    return ["pending"];
+  };
+
   return (
-    <div className="container mt-4">
-      <h2>Manage Availability</h2>
+    <Box p={3}>
+      <Typography variant="h5" fontWeight={600} mb={3}>
+        View Appointments
+      </Typography>
 
-      {/* ADD NEW AVAILABILITY */}
-      <div className="mb-4">
-        <input
-          type="date"
-          className="form-control mb-2"
-          value={newDate}
-          onChange={(e) => setNewDate(e.target.value)}
-        />
-
-        <select
-          className="form-select mb-2"
-          value={selectedSlot}
-          onChange={(e) => setSelectedSlot(e.target.value)}
-        >
-          <option value="">Select Time Slot</option>
-          {timeSlotsList.map((slot) => (
-            <option key={slot}>{slot}</option>
-          ))}
-        </select>
-
-        <button className="btn btn-primary" onClick={handleAddAvailability}>
-          Add / Update
-        </button>
-      </div>
-
-      {/* LIST AVAILABILITY */}
-      {availability.length === 0 ? (
-        <p>No availability set yet.</p>
+      {loading ? (
+        <Box display="flex" justifyContent="center" mt={5}>
+          <CircularProgress />
+        </Box>
+      ) : appointments.length === 0 ? (
+        <Typography color="text.secondary" textAlign="center">
+          No appointments found.
+        </Typography>
       ) : (
-        <ul className="list-group">
-          {availability.map((a) => (
-            <li key={a._id} className="list-group-item d-flex justify-content-between">
-              <div>
-                <strong>{a.date}</strong> → {a.slots.join(", ")}
-              </div>
+        <Grid container spacing={3}>
+          {appointments.map((appt) => (
+            <Grid item xs={12} md={6} key={appt._id}>
+              <Card elevation={3} sx={{ borderRadius: 2 }}>
+                <CardContent>
+                  <Typography variant="h6" fontWeight={600}>
+                    {appt.patientName || "Unknown Patient"}
+                  </Typography>
 
-              <button
-                className="btn btn-danger btn-sm"
-                onClick={() => handleDeleteAvailability(a._id)}
-              >
-                Delete
-              </button>
-            </li>
+                  <Typography variant="body2" color="text.secondary">
+                    Email: {appt.patientEmail || "-"}
+                  </Typography>
+
+                  <Typography mt={1}>
+                    <strong>Date:</strong> {appt.date}
+                  </Typography>
+
+                  <Typography>
+                    <strong>Time Slot:</strong> {appt.timeSlot}
+                  </Typography>
+
+                  {/* Status Chip */}
+                  <Box mt={2} mb={1}>
+                    <Chip
+                      label={appt.status}
+                      color={statusColor(appt.status)}
+                      variant="filled"
+                    />
+                  </Box>
+
+                  {/* Status Dropdown */}
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Update Status</InputLabel>
+                    <Select
+                      value={appt.status}
+                      label="Update Status"
+                      onChange={(e) =>
+                        updateStatus(appt._id, e.target.value)
+                      }
+                    >
+                      {getAllowedStatusOptions(appt.status).map((status) => (
+                        <MenuItem key={status} value={status}>
+                          {status.toUpperCase()}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </CardContent>
+              </Card>
+            </Grid>
           ))}
-        </ul>
+        </Grid>
       )}
-    </div>
+    </Box>
   );
 };
 
-export default ManageAvailability;
+export default ViewAppointments;

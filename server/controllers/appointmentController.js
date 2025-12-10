@@ -292,8 +292,9 @@ export const getAppointmentsByDoctor = async (req, res) => {
     const { doctorId } = req.params;
 
     // populate patient info from User model
-    const appointments = await Appointment.find({ doctorId })
-      .populate("patientId", "name email") // fetch patient details
+   const appointments = await Appointment.find({ doctorId })
+      .populate("patientId", "name email gender age phone") 
+      .sort({ date: 1 }) 
       .lean();
 
     // format response
@@ -301,6 +302,7 @@ export const getAppointmentsByDoctor = async (req, res) => {
       _id: appt._id,
       patientName: appt.patientId?.name || "Unknown",
       patientEmail: appt.patientId?.email || "N/A",
+      patientPhone: appt.patientId?.phone,
       date: appt.date,
       timeSlot: appt.timeSlot,
       status: appt.status

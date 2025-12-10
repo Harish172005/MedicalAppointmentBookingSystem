@@ -19,7 +19,7 @@ const router = express.Router();
 router.post("/register",  createDoctor);
 
 router.get("/profile", protect, isDoctor, getDoctorProfile); // Doctor gets own profile
-router.put("/update-profile", protect, isDoctor, updateDoctor);
+router.put("/:id", protect, isDoctor, updateDoctor);
 
 // GET all appointments for a doctor
 

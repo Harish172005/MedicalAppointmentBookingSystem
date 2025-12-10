@@ -81,10 +81,6 @@ const Navbar = () => {
                     <Nav.Link as={Link} to="/doctor/manage-availability">
                       <FaClock className="me-1" /> Availability
                     </Nav.Link>
-
-                    <Nav.Link as={Link} to="/doctor/edit-profile">
-                      <FaUserCircle className="me-1" /> Profile
-                    </Nav.Link>
                   </>
                 )}
 
@@ -99,9 +95,6 @@ const Navbar = () => {
                       <FaCalendarAlt className="me-1" /> My Appointments
                     </Nav.Link>
 
-                    <Nav.Link as={Link} to="/patient/profile">
-                      <FaUserCircle className="me-1" /> Profile
-                    </Nav.Link>
                   </>
                 )}
 
