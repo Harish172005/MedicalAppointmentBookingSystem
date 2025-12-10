@@ -1,24 +1,34 @@
-// models/Doctor.js
-// models/Doctor.js
 import mongoose from "mongoose";
 
 const doctorSchema = new mongoose.Schema({
-  user: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: "User", 
-    required: true 
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true
   },
-  specialization: { 
-    type: String, 
-    required: true 
+  Experience: {
+    type: String,
+    required: true
+  },
+  Region: {
+    type: String,
+    required: true
+  },
+  qualification:{
+     type: String
+  },
+  bio:{
+     type: String
+  },
+  specialization: {
+    type: String,
+    required: true
   },
   idProof: {
-    type: String, // can be a URL/path to uploaded file or base64 string
+    type: String,
     required: true
   }
-  // No availability here, since that's a separate collection
 });
 
 export default mongoose.model("Doctor", doctorSchema);
-
 

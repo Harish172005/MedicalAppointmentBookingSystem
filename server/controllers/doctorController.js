@@ -24,20 +24,20 @@ export const getDoctorsBySpecialization = async (req, res) => {
   try {
     const { specialization } = req.params;
 
-    // Find doctor IDs with this specialization
     const doctors = await Doctor.find({
       specialization: { $regex: `^${specialization}$`, $options: "i" }
-    }).populate("user", "name email");
-
-    // Get doctor IDs who have availability
-   
+    })
+      .populate("user", "name email phone")  // add more user fields
+      .select("specialization Experience"); // doctor fields you need
 
     res.json(doctors);
+
   } catch (error) {
     console.error("Error fetching doctors by specialization:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
+
 
 
 
@@ -67,7 +67,10 @@ export const createDoctor = async (req, res) => {
 
     const newDoctor = await Doctor.create({
       user: newUser._id,
-      specialization, // ✅ Save file path
+      specialization,
+      Experience,
+      Region,
+      idProof: req.file ? req.file.filename:null // ✅ Save file path
     });
 
     if (Array.isArray(availability) && availability.length > 0) {
@@ -89,13 +92,28 @@ export const createDoctor = async (req, res) => {
   }
 };
 
+export const getDoctorById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const doctor = await Doctor.findById(id).populate("user"); // <-- populate user reference
+
+    if (!doctor) {
+      return res.status(404).json({ message: "Doctor not found" });
+    }
+
+    res.status(200).json(doctor);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
 
 // GET all doctors
 export const getAllDoctors = async (req, res) => {
   try {
     // Populate user details for each doctor
     const doctors = await Doctor.find()
-      .populate("user", "name email role idProof experience qualification description")
+      .populate("user", "name email role idProof Experience qualification description")
       .lean();
 
     // Format response
@@ -104,10 +122,10 @@ export const getAllDoctors = async (req, res) => {
       name: doc.user.name,
       email: doc.user.email,
       specialization: doc.specialization,
-      experience: doc.user.experience,
-      qualification: doc.user.qualification,
-      description: doc.user.description,
-      idProof: doc.user.idProof, // filename/path for doctor ID proof
+      experience: doc.Experience,
+      qualification: doc.qualification,
+      description: doc.description,
+      idProof: doc.idProof?.replace("/uploads/", "") || null
     }));
 
     return res.status(200).json(formattedDoctors);
@@ -117,80 +135,136 @@ export const getAllDoctors = async (req, res) => {
   }
 };
 
-/**
- * @desc Get all doctors
- */
-// controllers/doctorController.js
 
-// Get single doctor profile (for edit)
+
 export const getDoctorProfile = async (req, res) => {
   try {
-    // If you're using JWT, you can get userId from req.user.id
-    const doctor = await Doctor.findOne({ user: req.user.id })
-      .populate("user", "name email")
-      .lean();
+    const userId = req.user._id; // ensure auth middleware sets req.user
+    const doctor = await Doctor.findOne({ user: userId }).populate("user", "name email");
 
     if (!doctor) {
-      return res.status(404).json({ message: "Doctor not found" });
+      return res.status(404).json({ message: "Doctor profile not found" });
     }
 
-    // Get availability separately
-    const availability = await Availability.find({ doctor: doctor._id });
-
-    res.json({
+    return res.json({
       _id: doctor._id,
-      name: doctor.user.name,
-      email: doctor.user.email,
-      specialization: doctor.specialization,
-      availability
+      specialization: doctor.specialization || "",
+      Experience: doctor.Experience || "",
+      Region: doctor.Region || "",
+      idProof: doctor.idProof || "",
+      user: {
+        name: doctor.user?.name || "",
+        email: doctor.user?.email || ""
+      }
     });
+  } catch (err) {
+    console.error("Error fetching doctor profile:", err);
+    return res.status(500).json({ message: "Server error", details: err.message });
+  }
+};
+export const getRegions = async (req, res) => {
+  try {
+    const regions = await Doctor.distinct("Region");  // Field name in schema
+
+    res.status(200).json(regions);
   } catch (error) {
-    console.error("Error fetching doctor profile:", error);
+    console.error("Error fetching regions:", error);
     res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+export const getDoctors = async (req, res) => {
+  try {
+    const { region, specialization, experience } = req.query;
+
+    const filter = {};
+    if (region) filter.Region = region;
+    if (specialization) filter.specialization = specialization;
+    if (experience) {
+      const minExp = parseInt(experience);
+      filter.Experience = { $regex: new RegExp(`^(${minExp}|[${minExp}-9][0-9]*)`) };
+    }
+
+    const doctors = await Doctor.find(filter)
+      .populate("user", "name email") // ensure user has name + email
+      .lean();
+
+    // Format consistently
+    const formattedDoctors = doctors.map((doc) => ({
+      _id: doc._id,
+      name: doc.user?.name || "No Name",
+      email: doc.user?.email || "No Email",
+      specialization: doc.specialization || "N/A",
+      experience: doc.Experience || "N/A",
+      qualification: doc.qualification || "N/A",
+      region: doc.Region || "N/A",
+      bio: doc.bio || "",
+      idProof: doc.idProof || null,
+    }));
+
+    res.status(200).json(formattedDoctors);
+  } catch (error) {
+    console.error("Error fetching doctors:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
 export const updateDoctor = async (req, res) => {
   try {
     const { id } = req.params; // doctorId
-    const { name, email, password, specialization, availability } = req.body;
 
-    // 1️⃣ Find doctor by ID
+    const {
+      name,
+      email,
+      password,
+      specialization,
+      qualification,
+      Experience,
+      Region,
+      bio
+    } = req.body;
+
+    // If updating file (idProof), check req.file
+    const idProof = req.file ? `/uploads/${req.file.filename}` : null;
+
+    // 1️⃣ Fetch doctor by ID
     const doctor = await Doctor.findById(id).populate("user");
     if (!doctor) {
       return res.status(404).json({ message: "Doctor not found" });
     }
 
+    const user = doctor.user;
+
     // 2️⃣ Update User details
-    if (name) doctor.user.name = name;
-    if (email) doctor.user.email = email;
+    if (name) user.name = name;
+    if (email) user.email = email;
+
     if (password) {
-      doctor.user.password = await bcrypt.hash(password, 10);
+      user.password = await bcrypt.hash(password, 10);
     }
-    await doctor.user.save();
+
+    await user.save();
 
     // 3️⃣ Update Doctor details
     if (specialization) doctor.specialization = specialization;
+    if (qualification) doctor.qualification = qualification;
+    if (Experience) doctor.Experience = Experience;
+    if (Region) doctor.Region = Region;
+    if (bio) doctor.bio = bio;
+
+    // Update ID proof only if new file uploaded
+    if (idProof) doctor.idProof = idProof;
+
     await doctor.save();
 
-    // 4️⃣ Update Availability
-    if (Array.isArray(availability)) {
-      // Remove old availability
-      await Availability.deleteMany({ doctor: doctor._id });
+    res.json({
+      message: "Doctor updated successfully",
+      doctor
+    });
 
-      // Insert new availability
-      const availabilityDocs = availability.map(slot => ({
-        doctor: doctor._id,
-        date: slot.date,
-        timeSlots: slot.timeSlots
-      }));
-      await Availability.insertMany(availabilityDocs);
-    }
-
-    res.json({ message: "Doctor updated successfully" });
   } catch (error) {
     console.error("Error updating doctor:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
-

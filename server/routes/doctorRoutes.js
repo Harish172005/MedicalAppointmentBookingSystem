@@ -5,22 +5,26 @@ import {
   createDoctor,
   getAllDoctors,
   getDoctorProfile,
-  updateDoctor
+  updateDoctor,
+  getDoctorById,
+  getDoctors,
+  getRegions
 } from "../controllers/doctorController.js";
 import { protect,isDoctor } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-router.get("/specializations", getSpecializations);
-router.get("/specialization/:specialization", getDoctorsBySpecialization);
+
 // route
 router.post("/register",  createDoctor);
 
-import { getAppointmentsByDoctor } from "../controllers/appointmentController.js";
-// GET all appointments for a doctor
-router.get("/",getAllDoctors);
+router.get("/profile", protect, isDoctor, getDoctorProfile); // Doctor gets own profile
+router.put("/update-profile", protect, isDoctor, updateDoctor);
 
-router.get("/:doctorId", protect, isDoctor, getDoctorProfile); // Doctor gets own profile
-router.put("/profile", protect, isDoctor, updateDoctor);
+// GET all appointments for a doctor
+
+router.get("/", getDoctors);
+router.get("/:id", getDoctorById);
+
 
 export default router;

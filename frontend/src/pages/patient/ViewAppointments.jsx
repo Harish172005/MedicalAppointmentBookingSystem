@@ -10,14 +10,14 @@ export default function ViewAppointmentsPatient() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!user||!user._id) return; // Wait for user to be loaded
+    if (!user || !user._id) return;
 
     const fetchAppointments = async () => {
       try {
         const res = await getUserAppointments(user._id);
         setAppointments(res.data);
       } catch (err) {
-        console.error(err);
+        console.error("Error fetching appointments:", err);
         setError("Failed to load appointments");
       } finally {
         setLoading(false);
@@ -46,6 +46,7 @@ export default function ViewAppointmentsPatient() {
   return (
     <div style={{ padding: "20px" }}>
       <h3 style={{ marginBottom: "20px" }}>My Appointments</h3>
+
       {appointments.length > 0 ? (
         <Row>
           {appointments.map((appt) => (
@@ -53,22 +54,24 @@ export default function ViewAppointmentsPatient() {
               <Card style={{ borderRadius: "10px", boxShadow: "0 4px 6px rgba(0,0,0,0.1)" }}>
                 <Card.Body>
                   <Card.Title style={{ fontSize: "1.2rem", fontWeight: "bold" }}>
-                    {appt.doctor?.name || "Unknown Doctor"}
+                    {appt.doctorId?.user?.name || "Unknown Doctor"}
                   </Card.Title>
+
                   <Card.Subtitle className="mb-2 text-muted">
-                    {appt.doctor?.specialization || "N/A"}
+                    {appt.doctorId?.specialization || "N/A"}
                   </Card.Subtitle>
+
                   <div style={{ marginTop: "10px" }}>
                     <p><strong>Date:</strong> {new Date(appt.date).toLocaleDateString()}</p>
-                    <p><strong>Time:</strong> {appt.time}</p>
+                    <p><strong>Time:</strong> {appt.timeSlot}</p>
                     <p>
                       <strong>Status:</strong>{" "}
                       <span
                         style={{
                           color:
-                            appt.status === "Confirmed"
+                            appt.status === "confirmed"
                               ? "green"
-                              : appt.status === "Cancelled"
+                              : appt.status === "cancelled"
                               ? "red"
                               : "orange",
                           fontWeight: "bold",

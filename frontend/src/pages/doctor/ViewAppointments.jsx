@@ -1,89 +1,139 @@
-import React, { useEffect, useState } from "react";
-import { Card, CardContent, MenuItem, Select, FormControl, InputLabel } from "@mui/material";
-import { format } from "date-fns";
+import React, { useState, useEffect } from "react";
 import API from "../../utils/axios";
+import { getDoctorProfile } from "../../api/doctor";
 
-export default function ViewAppointments() {
-  const [appointments, setAppointments] = useState([]);
-  const [loading, setLoading] = useState(true);
+const ManageAvailability = () => {
+  const [doctorId, setDoctorId] = useState(null);
+  const [availability, setAvailability] = useState([]);
+  const [newDate, setNewDate] = useState("");
+  const [selectedSlot, setSelectedSlot] = useState("");
 
-  // ✅ Get doctor info from localStorage
-  const doctor = JSON.parse(localStorage.getItem("user"));
-  const doctorId = doctor?._id; // use _id from doctor object
-  console.log("Doctor ID:", doctorId);
+  const timeSlotsList = ["09:00 AM", "11:00 AM", "02:00 PM", "04:00 PM"];
 
-  // ✅ Fetch Appointments
-  const fetchAppointments = async () => {
-    if (!doctorId) return; // guard
+  // 1️⃣ Load Doctor ID from backend
+  const loadDoctorId = async () => {
     try {
-      const res = await API.get(`/appointments/doctor/${doctorId}`);
-      setAppointments(res.data);
+      const res = await getDoctorProfile();
+      const id = res.data._id; // Doctor Model ID
+      setDoctorId(id);
+      console.log("Doctor ID Loaded:", id);
     } catch (err) {
-      console.error("Error fetching appointments:", err);
-    } finally {
-      setLoading(false);
+      console.error("Failed to load doctor ID:", err);
     }
   };
 
-  // ✅ Update Status API Call
-  const handleStatusChange = async (appointmentId, newStatus) => {
+  // 2️⃣ Fetch availability
+  const fetchAvailability = async (id) => {
     try {
-      await API.put(`/appointments/${appointmentId}/status`, { status: newStatus });
-      // Update UI immediately without refetch
-      setAppointments((prev) =>
-        prev.map((appt) =>
-          appt._id === appointmentId ? { ...appt, status: newStatus } : appt
-        )
-      );
-    } catch (err) {
-      console.error("Error updating status:", err);
-      alert("Failed to update status");
+      const res = await API.get(`/availability/${id}`);
+      setAvailability(res.data);
+    } catch (error) {
+      console.error("Error fetching availability:", error);
     }
   };
+
+  // 3️⃣ Add availability
+  const handleAddAvailability = async () => {
+    if (!newDate || !selectedSlot) {
+      return alert("Please choose date and time slot");
+    }
+
+    try {
+      const res = await API.post(`/availability/${doctorId}`, {
+        date: newDate,
+        slots: [selectedSlot],
+      });
+
+      const updated = res.data;
+
+      setAvailability((prev) => {
+        const exists = prev.find((a) => a.date === newDate);
+        if (exists) {
+          return prev.map((a) => (a.date === newDate ? updated : a));
+        }
+        return [...prev, updated];
+      });
+
+      setNewDate("");
+      setSelectedSlot("");
+
+    } catch (error) {
+      console.error("Error adding availability:", error);
+      alert(error.response?.data?.message || "Failed to add availability");
+    }
+  };
+
+  // 4️⃣ Delete availability
+  const handleDeleteAvailability = async (id) => {
+    try {
+      await API.delete(`/availability/${id}`);
+      setAvailability((prev) => prev.filter((a) => a._id !== id));
+    } catch (error) {
+      console.error("Error deleting availability:", error);
+    }
+  };
+
+  // Load doctorId first → then fetch availability
+  useEffect(() => {
+    loadDoctorId();
+  }, []);
 
   useEffect(() => {
-    fetchAppointments();
+    if (doctorId) fetchAvailability(doctorId);
   }, [doctorId]);
 
   return (
     <div className="container mt-4">
-      <h2 className="mb-4 text-center">My Appointments</h2>
+      <h2>Manage Availability</h2>
 
-      {loading ? (
-        <div className="text-center">Loading...</div>
-      ) : appointments.length === 0 ? (
-        <div className="text-center">No appointments found.</div>
-      ) : (
-        <div className="row g-4">
-          {appointments.map((appt) => (
-            <div key={appt._id} className="col-md-6">
-              <Card className="shadow-sm border-info">
-                <CardContent>
-                  <h5 className="mb-2">Patient: {appt.patientName}</h5>
-                  <p><strong>Email:</strong> {appt.patientEmail}</p>
-                  <p><strong>Date:</strong> {format(new Date(appt.date), "dd MMM yyyy")}</p>
-                  <p><strong>Time:</strong> {appt.timeSlot}</p>
+      {/* ADD NEW AVAILABILITY */}
+      <div className="mb-4">
+        <input
+          type="date"
+          className="form-control mb-2"
+          value={newDate}
+          onChange={(e) => setNewDate(e.target.value)}
+        />
 
-                  {/* ✅ Status Dropdown */}
-                  <FormControl fullWidth size="small" className="mt-2">
-                    <InputLabel>Status</InputLabel>
-                    <Select
-                      value={appt.status}
-                      label="Status"
-                      onChange={(e) => handleStatusChange(appt._id, e.target.value)}
-                    >
-                      <MenuItem value="Pending">Pending</MenuItem>
-                      <MenuItem value="Confirmed">Confirmed</MenuItem>
-                      <MenuItem value="Completed">Completed</MenuItem>
-                      <MenuItem value="Cancelled">Cancelled</MenuItem>
-                    </Select>
-                  </FormControl>
-                </CardContent>
-              </Card>
-            </div>
+        <select
+          className="form-select mb-2"
+          value={selectedSlot}
+          onChange={(e) => setSelectedSlot(e.target.value)}
+        >
+          <option value="">Select Time Slot</option>
+          {timeSlotsList.map((slot) => (
+            <option key={slot}>{slot}</option>
           ))}
-        </div>
+        </select>
+
+        <button className="btn btn-primary" onClick={handleAddAvailability}>
+          Add / Update
+        </button>
+      </div>
+
+      {/* LIST AVAILABILITY */}
+      {availability.length === 0 ? (
+        <p>No availability set yet.</p>
+      ) : (
+        <ul className="list-group">
+          {availability.map((a) => (
+            <li key={a._id} className="list-group-item d-flex justify-content-between">
+              <div>
+                <strong>{a.date}</strong> → {a.slots.join(", ")}
+              </div>
+
+              <button
+                className="btn btn-danger btn-sm"
+                onClick={() => handleDeleteAvailability(a._id)}
+              >
+                Delete
+              </button>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );
-}
+};
+
+export default ManageAvailability;

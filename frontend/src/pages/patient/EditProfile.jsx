@@ -30,11 +30,11 @@ const EditProfile = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
         setFormData({
-          name: res.data.name || '',
-          email: res.data.email || '',
-          phone: res.data.phone || '',
-          age: res.data.age || '',
-          gender: res.data.gender || 'Male',
+          name: res.data.user.name || '',
+          email: res.data.user.email || '',
+          phone: res.data.user.phone || '',
+          age: res.data.user.age || '',
+          gender: res.data.user.gender || 'Male',
         });
       } catch (err) {
         console.error('Error fetching profile:', err);

@@ -1,105 +1,208 @@
 import React, { useState, useEffect } from "react";
 import API from "../../utils/axios";
+import { getDoctorProfile } from "../../api/doctor";
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Button,
+  TextField,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel,
+  Alert,
+  List,
+  ListItem,
+  ListItemText,
+  IconButton,
+  Divider
+} from "@mui/material";
+import DeleteIcon from "@mui/icons-material/Delete";
 
-const ManageAvailability = () => {
+export default function ManageAvailability() {
+  const [doctorId, setDoctorId] = useState(null);
   const [availability, setAvailability] = useState([]);
   const [newDate, setNewDate] = useState("");
-  const [newSlots, setNewSlots] = useState(""); // comma-separated slots
-  const doctor = JSON.parse(localStorage.getItem("user"));
-  const doctorId = doctor?._id;
+  const [selectedSlot, setSelectedSlot] = useState("");
+  const [error, setError] = useState("");
 
-  // Fetch availability for the doctor
-  const fetchAvailability = async () => {
-    if (!doctorId) return;
+  const timeSlotsList = [
+    "09:00 AM",
+    "10:00 AM",
+    "11:00 AM",
+    "12:00 PM",
+    "02:00 PM",
+    "03:00 PM",
+    "04:00 PM"
+  ];
+
+  // Load logged-in doctor ID
+  const loadDoctorId = async () => {
     try {
-      const res = await API.get(`/availability/${doctorId}`);
-      console.log("Fetched Availability:", res.data);
-      setAvailability(res.data);
-    } catch (error) {
-      console.error("Error fetching availability:", error);
+      const res = await getDoctorProfile();
+      setDoctorId(res.data._id);
+    } catch (err) {
+      console.error("Failed to load doctor profile:", err);
+      setError("Unable to load doctor profile.");
     }
   };
 
-  // Add or update availability for a date
-  const handleAddAvailability = async () => {
-    if (!newDate || !newSlots) return alert("Date and slots are required");
+  // Fetch Doctor Availability
+  const fetchAvailability = async () => {
+    try {
+      const res = await API.get(`/availability/${doctorId}`);
+      setAvailability(res.data);
+    } catch (err) {
+      console.error("Error fetching availability:", err);
+      setError("Failed to fetch availability.");
+    }
+  };
 
-    const slotsArray = newSlots.split(",").map(s => s.trim());
+  // Add or update availability
+  const handleAddAvailability = async () => {
+    if (!newDate || !selectedSlot) {
+      setError("Please select a date and time slot.");
+      return;
+    }
 
     try {
       const res = await API.post(`/availability/${doctorId}`, {
         date: newDate,
-        slots: slotsArray,
+        slots: [selectedSlot],
       });
-      console.log("Added/Updated Availability:", res.data);
 
-      // Replace existing date or add new
-      setAvailability(prev => {
-        const exists = prev.find(a => a.date === newDate);
+      setAvailability((prev) => {
+        const exists = prev.find((a) => a.date === newDate);
         if (exists) {
-          return prev.map(a => a.date === newDate ? res.data : a);
+          return prev.map((a) => (a.date === newDate ? res.data : a));
         }
         return [...prev, res.data];
       });
 
       setNewDate("");
-      setNewSlots("");
+      setSelectedSlot("");
+      setError("");
+
     } catch (error) {
       console.error("Error adding availability:", error);
-      alert(error.response?.data?.message || "Failed to add availability");
+      setError(error.response?.data?.message || "Failed to add availability.");
     }
   };
 
-  // Delete entire availability entry for a date
+  // Delete an availability record
   const handleDeleteAvailability = async (id) => {
     try {
-      await API.delete(`/availability/availability/${id}`);
-      setAvailability(prev => prev.filter(a => a._id !== id));
+      await API.delete(`/availability/${id}`);
+      setAvailability((prev) => prev.filter((a) => a._id !== id));
     } catch (error) {
       console.error("Error deleting availability:", error);
-      alert(error.response?.data?.message || "Failed to delete availability");
+      setError("Failed to delete availability.");
     }
   };
 
+  // Load doctorId on mount
   useEffect(() => {
-    fetchAvailability();
+    loadDoctorId();
+  }, []);
+
+  // Fetch availability once doctorId is loaded
+  useEffect(() => {
+    if (doctorId) fetchAvailability();
   }, [doctorId]);
 
   return (
-    <div className="container mt-4">
-      <h2>Manage Availability</h2>
+    <Box maxWidth="700px" mx="auto" mt={5}>
+      <Typography variant="h4" gutterBottom>
+        Manage Availability
+      </Typography>
 
-      {/* Add / Update Availability */}
-      <div className="mb-4">
-        <input
-          type="date"
-          value={newDate}
-          onChange={e => setNewDate(e.target.value)}
-        />
-        <input
-          type="text"
-          placeholder="Slots (comma separated)"
-          value={newSlots}
-          onChange={e => setNewSlots(e.target.value)}
-        />
-        <button onClick={handleAddAvailability}>Add / Update</button>
-      </div>
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+
+      {/* Add Availability Card */}
+      <Card sx={{ mb: 4, p: 2 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
+            Add / Update Availability
+          </Typography>
+
+          <TextField
+            type="date"
+            label="Choose Date"
+            fullWidth
+            sx={{ mt: 2 }}
+            InputLabelProps={{ shrink: true }}
+            value={newDate}
+            onChange={(e) => setNewDate(e.target.value)}
+          />
+
+          <FormControl fullWidth sx={{ mt: 2 }}>
+            <InputLabel>Select Time Slot</InputLabel>
+            <Select
+              label="Select Time Slot"
+              value={selectedSlot}
+              onChange={(e) => setSelectedSlot(e.target.value)}
+            >
+              {timeSlotsList.map((slot) => (
+                <MenuItem key={slot} value={slot}>
+                  {slot}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <Button
+            variant="contained"
+            color="primary"
+            sx={{ mt: 3 }}
+            onClick={handleAddAvailability}
+          >
+            Save Availability
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* Availability List */}
-      {availability.length === 0 ? (
-        <p>No availability set yet.</p>
-      ) : (
-        <ul>
-          {availability.map(a => (
-            <li key={a._id}>
-              <strong>{a.date}</strong> → {a.slots.join(", ")}
-              <button onClick={() => handleDeleteAvailability(a._id)}>Delete</button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-};
+      <Card sx={{ p: 2 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
+            Existing Availability
+          </Typography>
 
-export default ManageAvailability;
+          {availability.length === 0 ? (
+            <Typography>No availability added yet.</Typography>
+          ) : (
+            <List>
+              {availability.map((a) => (
+                <React.Fragment key={a._id}>
+                  <ListItem
+                    secondaryAction={
+                      <IconButton
+                        edge="end"
+                        color="error"
+                        onClick={() => handleDeleteAvailability(a._id)}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    }
+                  >
+                    <ListItemText
+                      primary={a.date}
+                      secondary={a.slots.join(", ")}
+                    />
+                  </ListItem>
+                  <Divider />
+                </React.Fragment>
+              ))}
+            </List>
+          )}
+        </CardContent>
+      </Card>
+    </Box>
+  );
+}

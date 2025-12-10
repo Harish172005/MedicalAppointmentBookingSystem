@@ -1,43 +1,64 @@
-// src/pages/patient/Dashboard.jsx
+// src/pages/patient/PatientDashboard.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { motion } from "framer-motion";
-import { Container, Row, Col, Card, Button, Modal, Dropdown } from "react-bootstrap";
-import { FaFilter } from "react-icons/fa"; // Filter icon
+import {
+  Box,
+  Container,
+  Grid,
+  Card,
+  CardMedia,
+  CardContent,
+  Typography,
+  Button,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Modal,
+  Stack,
+} from "@mui/material";
 
 export default function PatientDashboard() {
   const [doctors, setDoctors] = useState([]);
-  const [filteredDoctors, setFilteredDoctors] = useState([]);
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [showModal, setShowModal] = useState(false);
+
   const [specializations, setSpecializations] = useState([]);
-  const [filter, setFilter] = useState(""); // selected specialization
+  const [regions, setRegions] = useState([]);
+
+  const [filterSpecialization, setFilterSpecialization] = useState("");
+  const [filterRegion, setFilterRegion] = useState("");
+  const [filterExperience, setFilterExperience] = useState("");
+
   const navigate = useNavigate();
 
-  // Fetch doctors
-  useEffect(() => {
-    const fetchDoctors = async () => {
-      try {
-        const res = await axios.get("http://localhost:5000/api/doctors");
-        setDoctors(res.data);
-        setFilteredDoctors(res.data);
+  // Fetch all doctors with filters
+  const fetchDoctors = async () => {
+    try {
+      const params = {};
+      if (filterSpecialization) params.specialization = filterSpecialization;
+      if (filterRegion) params.region = filterRegion;
+      if (filterExperience) params.experience = filterExperience;
 
-        // Extract unique specializations
-        const specs = [...new Set(res.data.map((doc) => doc.specialization))];
-        setSpecializations(specs);
-      } catch (err) {
-        console.error("Error fetching doctors:", err);
-      }
-    };
+      const res = await axios.get("http://localhost:5000/api/doctor", { params });
+
+      setDoctors(res.data);
+
+      // Extract unique specializations and regions from fetched doctors
+      const specs = [...new Set(res.data.map((doc) => doc.specialization))];
+      const regs = [...new Set(res.data.map((doc) => doc.region))];
+
+      setSpecializations(specs);
+      setRegions(regs);
+    } catch (err) {
+      console.error("Error fetching doctors:", err);
+    }
+  };
+
+  useEffect(() => {
     fetchDoctors();
-  }, []);
-
-  // Filter doctors by specialization
-  useEffect(() => {
-    if (!filter) setFilteredDoctors(doctors);
-    else setFilteredDoctors(doctors.filter((doc) => doc.specialization === filter));
-  }, [filter, doctors]);
+  }, [filterSpecialization, filterRegion, filterExperience]);
 
   const handleViewDetails = (doctor) => {
     setSelectedDoctor(doctor);
@@ -49,149 +70,161 @@ export default function PatientDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-teal-50 to-blue-100 py-5">
-      <Container>
-        <motion.h2
-          className="text-center mb-4 fw-bold text-primary"
-          initial={{ opacity: 0, y: -40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          🩺 Find Your Doctor
-        </motion.h2>
+    <Container sx={{ py: 5 }}>
+      <Typography variant="h4" align="center" gutterBottom color="primary">
+        🩺 Find Your Doctor
+      </Typography>
 
-        {/* Filter Dropdown */}
-        <div className="d-flex justify-content-center mb-4">
-          <Dropdown>
-            <Dropdown.Toggle variant="outline-primary" id="dropdown-specialization">
-              <FaFilter /> {filter || "Filter by Specialization"}
-            </Dropdown.Toggle>
-            <Dropdown.Menu>
-              <Dropdown.Item onClick={() => setFilter("")}>All</Dropdown.Item>
-              {specializations.map((spec, idx) => (
-                <Dropdown.Item key={idx} onClick={() => setFilter(spec)}>
-                  {spec}
-                </Dropdown.Item>
-              ))}
-            </Dropdown.Menu>
-          </Dropdown>
-        </div>
+      {/* Filters */}
+      <Stack direction={{ xs: "column", sm: "row" }} spacing={2} mb={4} justifyContent="center">
+        <FormControl sx={{ minWidth: 180 }}>
+          <InputLabel>Specialization</InputLabel>
+          <Select
+            value={filterSpecialization}
+            onChange={(e) => setFilterSpecialization(e.target.value)}
+            label="Specialization"
+          >
+            <MenuItem value="">All</MenuItem>
+            {specializations.map((spec, idx) => (
+              <MenuItem key={idx} value={spec}>
+                {spec}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
 
-        {/* Doctor Cards */}
-        <Row>
-          {filteredDoctors.length > 0 ? (
-            filteredDoctors.map((doctor, idx) => (
-              <Col md={4} sm={6} xs={12} className="mb-4" key={doctor._id}>
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.1 }}
-                >
-                  <Card className="shadow-lg rounded-4 border-0 overflow-hidden doctor-card">
-                    <Card.Img
-                      variant="top"
-                      src={
-                        doctor.idProof
-                          ? `http://localhost:5000/uploads/${doctor.idProof}`
-                          : "/default-doctor.jpg"
-                      }
-                      style={{
-                        height: "240px",
-                        objectFit: "cover",
-                        borderBottom: "3px solid #007bff",
-                      }}
-                    />
-                    <Card.Body className="text-center">
-                      <Card.Title className="text-primary fs-5 fw-bold mb-2">
-                        {doctor.name}
-                      </Card.Title>
-                      <Card.Subtitle className="text-muted mb-2">
-                        {doctor.specialization}
-                      </Card.Subtitle>
-                      <p className="text-secondary small mb-3">
-                        {doctor.experience
-                          ? `${doctor.experience} years of experience`
-                          : "Experience not available"}
-                      </p>
-                      <Button
-                        variant="outline-primary"
-                        className="w-100 fw-semibold"
-                        onClick={() => handleViewDetails(doctor)}
-                      >
-                        View Details
-                      </Button>
-                    </Card.Body>
-                  </Card>
-                </motion.div>
-              </Col>
-            ))
-          ) : (
-            <p className="text-center text-muted">No doctors found.</p>
-          )}
-        </Row>
+        <FormControl sx={{ minWidth: 180 }}>
+          <InputLabel>Region</InputLabel>
+          <Select
+            value={filterRegion}
+            onChange={(e) => setFilterRegion(e.target.value)}
+            label="Region"
+          >
+            <MenuItem value="">All</MenuItem>
+            {regions.map((reg, idx) => (
+              <MenuItem key={idx} value={reg}>
+                {reg}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
 
-        {/* Doctor Details Modal */}
-        <Modal show={showModal} onHide={() => setShowModal(false)} centered size="lg">
-          <Modal.Header closeButton className="bg-primary text-white">
-            <Modal.Title>Doctor Details</Modal.Title>
-          </Modal.Header>
-          <Modal.Body>
-            {selectedDoctor && (
-              <Row>
-                <Col md={5}>
-                  <img
-                    src={
-                      selectedDoctor.idProof
-                        ? `http://localhost:5000/uploads/${selectedDoctor.idProof}`
-                        : "/default-doctor.jpg"
-                    }
-                    alt={selectedDoctor.name}
-                    className="img-fluid rounded-3 shadow-sm"
+        <FormControl sx={{ minWidth: 180 }}>
+          <InputLabel>Experience</InputLabel>
+          <Select
+            value={filterExperience}
+            onChange={(e) => setFilterExperience(e.target.value)}
+            label="Experience"
+          >
+            <MenuItem value="">Any</MenuItem>
+            <MenuItem value="1">1+ years</MenuItem>
+            <MenuItem value="3">3+ years</MenuItem>
+            <MenuItem value="5">5+ years</MenuItem>
+            <MenuItem value="10">10+ years</MenuItem>
+          </Select>
+        </FormControl>
+      </Stack>
+
+      {/* Doctor Cards */}
+      <Grid container spacing={3}>
+        {doctors.length > 0 ? (
+          doctors.map((doctor) => (
+            <Grid item xs={12} sm={6} md={4} key={doctor._id}>
+              <Card
+                sx={{
+                  transition: "0.3s",
+                  "&:hover": { transform: "translateY(-5px) scale(1.02)", boxShadow: 6 },
+                }}
+              >
+                <Box sx={{ overflow: "hidden" }}>
+                  <CardMedia
+                    component="img"
+                    height="240"
+                    image={doctor.idProof ?  `http://localhost:5000/${doctor.idProof.replace(/^\/+/, "")}` : "/default-doctor.jpg"}
+                    alt={doctor.name || "Doctor"}
+                    sx={{
+                      transition: "transform 0.3s ease-in-out",
+                      "&:hover": { transform: "scale(1.1)" },
+                    }}
                   />
-                </Col>
-                <Col md={7}>
-                  <h4 className="fw-bold text-primary mb-3">{selectedDoctor.name}</h4>
-                  <p>
-                    <strong>Specialization:</strong> {selectedDoctor.specialization}
-                  </p>
-                  <p>
-                    <strong>Email:</strong> {selectedDoctor.email}
-                  </p>
-                  <p>
-                    <strong>Experience:</strong> {selectedDoctor.experience || "N/A"} years
-                  </p>
-                  <p>
-                    <strong>Qualification:</strong> {selectedDoctor.qualification || "N/A"}
-                  </p>
-                  <p>
-                    <strong>About:</strong> {selectedDoctor.description || "No details available."}
-                  </p>
-                </Col>
-              </Row>
-            )}
-          </Modal.Body>
-          <Modal.Footer className="justify-content-center">
-            <Button
-              variant="success"
-              size="lg"
-              onClick={() => handleBookAppointment(selectedDoctor._id)}
-            >
-              Book Appointment
-            </Button>
-          </Modal.Footer>
-        </Modal>
+                </Box>
+                <CardContent sx={{ textAlign: "center" }}>
+                  <Typography variant="h6" color="primary">
+                    {doctor.name || "No Name"}
+                  </Typography>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    {doctor.specialization || "N/A"}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" mb={1}>
+                    {doctor.experience ? `${doctor.experience} of experience` : "Experience not available"}
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    fullWidth
+                    onClick={() => handleViewDetails(doctor)}
+                  >
+                    View Details
+                  </Button>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))
+        ) : (
+          <Typography variant="body1" align="center" sx={{ width: "100%", mt: 2 }}>
+            No doctors found.
+          </Typography>
+        )}
+      </Grid>
 
-        {/* Hover Effects */}
-        <style jsx>{`
-          .doctor-card {
-            transition: all 0.3s ease-in-out;
-          }
-          .doctor-card:hover {
-            transform: translateY(-6px) scale(1.02);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-          }
-        `}</style>
-      </Container>
-    </div>
+      {/* Doctor Modal */}
+      <Modal open={showModal} onClose={() => setShowModal(false)}>
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            bgcolor: "background.paper",
+            boxShadow: 24,
+            p: 4,
+            width: { xs: "90%", sm: 600 },
+            borderRadius: 2,
+          }}
+        >
+          {selectedDoctor && (
+            <>
+              <Stack direction="row" spacing={2} mb={2}>
+                <Box flex={1}>
+                  <img
+                    src={selectedDoctor.idProof ? `http://localhost:5000/uploads/${selectedDoctor.idProof}` : "/default-doctor.jpg"}
+                    alt={selectedDoctor.name || "Doctor"}
+                    style={{ width: "100%", borderRadius: "8px" }}
+                  />
+                </Box>
+                <Box flex={1}>
+                  <Typography variant="h6" color="primary" gutterBottom>
+                    {selectedDoctor.name || "No Name"}
+                  </Typography>
+                  <Typography variant="body2"><strong>Specialization:</strong> {selectedDoctor.specialization || "N/A"}</Typography>
+                  <Typography variant="body2"><strong>Email:</strong> {selectedDoctor.email || "N/A"}</Typography>
+                  <Typography variant="body2"><strong>Experience:</strong> {selectedDoctor.experience || "N/A"} years</Typography>
+                  <Typography variant="body2"><strong>Qualification:</strong> {selectedDoctor.qualification || "N/A"}</Typography>
+                  <Typography variant="body2" mt={1}>{selectedDoctor.bio || "No details available"}</Typography>
+                  <Button
+                    variant="contained"
+                    color="success"
+                    fullWidth
+                    sx={{ mt: 2 }}
+                    onClick={() => handleBookAppointment(selectedDoctor._id)}
+                  >
+                    Book Appointment
+                  </Button>
+                </Box>
+              </Stack>
+            </>
+          )}
+        </Box>
+      </Modal>
+    </Container>
   );
 }

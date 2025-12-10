@@ -12,29 +12,34 @@ export default function Login() {
   const { setUser, fetchProfile } = useAuth();
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const { login } = useAuth();   // ✅ use login() method from context
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
+
     try {
       const res = await apiLogin(email, password);
       const { token, user, doctor } = res.data;
 
-      setAuthData(token, user, doctor);
-      localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify(user));
-      if (doctor) localStorage.setItem("doctor", JSON.stringify(doctor));
+      // Save auth data using context login()
+      login(user, token);
 
-      setUser(user);
-      await fetchProfile();
+      // Store doctor separately if exists
+      if (doctor) {
+        localStorage.setItem("doctor", JSON.stringify(doctor));
+      }
 
+      // Redirect based on role
       if (user.role === "doctor") navigate("/doctor/dashboard");
       else if (user.role === "patient") navigate("/patient/dashboard");
       else navigate("/");
+
     } catch (err) {
       console.error("Login failed:", err);
       setError("Invalid email or password");
     }
+
   };
 
   return (

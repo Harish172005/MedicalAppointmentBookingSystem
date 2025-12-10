@@ -19,9 +19,19 @@ export const verifyToken = async (req, res) => {
 };
 
 export const register = async (req, res) => {
-  const { name, email, password, role, specialization, availability } = req.body;
+  const { name, email, password, role, specialization, Experience, Region } = req.body;
+  let { availability } = req.body;
 
   try {
+    // Fix: Handle Availability JSON parsing
+    if (availability) {
+      try {
+        availability = JSON.parse(availability);  // Convert JSON string → array
+      } catch (err) {
+        console.log("Availability was not JSON → skipping parse");
+      }
+    }
+
     // Check if email exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -39,21 +49,31 @@ export const register = async (req, res) => {
       role
     });
 
+    if (!req.file) {
+      return res.status(400).json({ error: "ID Proof file is required" });
+    }
+
+    const idProof = `/uploads/${req.file.filename}`;
+
     // If doctor, create Doctor profile and Availability
     if (role === "doctor") {
       // Create doctor record
       const newDoctor = await Doctor.create({
         user: newUser._id,
-        specialization
+        specialization,
+        Experience,
+        Region,
+        idProof
       });
 
-      // Store availability in separate collection
+      // Store availability
       if (Array.isArray(availability) && availability.length > 0) {
         const availabilityDocs = availability.map(item => ({
           doctor: newDoctor._id,
           date: item.date,
           slots: item.slots
         }));
+
         await Availability.insertMany(availabilityDocs);
       }
     }
@@ -76,6 +96,33 @@ export const register = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
+export const updateUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, email, phone, age, gender } = req.body;
+
+    // Optional: Validate fields
+    if (!name || !email) {
+      return res.status(400).json({ success: false, message: "Name and Email are required" });
+    }
+
+    const updateUser = await User.findByIdAndUpdate(
+      id,
+      { name, email, phone, age, gender },
+      { new: true, runValidators: true }
+    ).select("-password"); // exclude password
+
+    if (!updateUser) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    res.status(200).json({ success: true, user: updateUser });
+  } catch (error) {
+    console.error("Error updating user:", error);
+    res.status(500).json({ success: false, message: "Server error while updating profile" });
+  }
+};
+
 
 export const login = async (req, res) => {
   const { email, password } = req.body;

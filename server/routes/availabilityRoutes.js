@@ -8,9 +8,15 @@ import { protect, isDoctor } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-router.get("/:userId", getDoctorAvailability);
+// fetch availability using doctorId
+router.get("/:doctorId", protect, getDoctorAvailability);
 
-router.post("/:userId", addDoctorAvailability);
-router.delete("/:availabilityId", deleteDoctorAvailability);
+
+// add availability using doctorId
+router.post("/:doctorId", protect, isDoctor, addDoctorAvailability);
+
+// delete availability using availabilityId
+router.delete("/:availabilityId", protect, isDoctor, deleteDoctorAvailability);
 
 export default router;
+
