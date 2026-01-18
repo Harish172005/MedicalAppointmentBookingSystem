@@ -34,31 +34,29 @@ export default function PatientDashboard() {
   const navigate = useNavigate();
 
   // Fetch all doctors with filters
-  const fetchDoctors = async () => {
-    try {
-      const params = {};
-      if (filterSpecialization) params.specialization = filterSpecialization;
-      if (filterRegion) params.region = filterRegion;
-      if (filterExperience) params.experience = filterExperience;
+  const fetchDoctors = useCallback(async () => {
+  try {
+    const params = {};
+    if (filterSpecialization) params.specialization = filterSpecialization;
+    if (filterRegion) params.region = filterRegion;
+    if (filterExperience) params.experience = filterExperience;
 
-      const res = await axios.get("http://localhost:5000/api/doctor", { params });
+    const res = await axios.get(
+      `${process.env.REACT_APP_API_URL}/api/doctor`,
+      { params }
+    );
 
-      setDoctors(res.data);
+    setDoctors(res.data);
 
-      // Extract unique specializations and regions from fetched doctors
-      const specs = [...new Set(res.data.map((doc) => doc.specialization))];
-      const regs = [...new Set(res.data.map((doc) => doc.region))];
+    const specs = [...new Set(res.data.map(doc => doc.specialization))];
+    const regs = [...new Set(res.data.map(doc => doc.region))];
 
-      setSpecializations(specs);
-      setRegions(regs);
-    } catch (err) {
-      console.error("Error fetching doctors:", err);
-    }
-  };
-
-  useEffect(() => {
-    fetchDoctors();
-  }, [filterSpecialization, filterRegion, filterExperience]);
+    setSpecializations(specs);
+    setRegions(regs);
+  } catch (err) {
+    console.error("Error fetching doctors:", err);
+  }
+}, [filterSpecialization, filterRegion, filterExperience]);
 
   const handleViewDetails = (doctor) => {
     setSelectedDoctor(doctor);

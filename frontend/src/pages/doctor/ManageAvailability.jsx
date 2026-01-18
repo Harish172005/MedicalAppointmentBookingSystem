@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import API from "../../utils/axios";
 import { getDoctorProfile } from "../../api/doctor";
 import {
@@ -39,26 +39,29 @@ export default function ManageAvailability() {
   ];
 
   // Load logged-in doctor ID
-  const loadDoctorId = async () => {
-    try {
-      const res = await getDoctorProfile();
-      setDoctorId(res.data._id);
-    } catch (err) {
-      console.error("Failed to load doctor profile:", err);
-      setError("Unable to load doctor profile.");
-    }
-  };
+  const loadDoctorId = useCallback(async () => {
+  try {
+    const res = await getDoctorProfile();
+    setDoctorId(res.data._id);
+  } catch (err) {
+    console.error("Failed to load doctor profile:", err);
+    setError("Unable to load doctor profile.");
+  }
+}, []);
+
 
   // Fetch Doctor Availability
-  const fetchAvailability = async () => {
-    try {
-      const res = await API.get(`/availability/${doctorId}`);
-      setAvailability(res.data);
-    } catch (err) {
-      console.error("Error fetching availability:", err);
-      setError("Failed to fetch availability.");
-    }
-  };
+  const fetchAvailability = useCallback(async () => {
+  if (!doctorId) return;
+
+  try {
+    const res = await API.get(`/availability/${doctorId}`);
+    setAvailability(res.data);
+  } catch (err) {
+    console.error("Error fetching availability:", err);
+    setError("Failed to fetch availability.");
+  }
+}, [doctorId]);
 
   // Add or update availability
   const handleAddAvailability = async () => {
@@ -103,14 +106,15 @@ export default function ManageAvailability() {
   };
 
   // Load doctorId on mount
-  useEffect(() => {
-    loadDoctorId();
-  }, []);
+ useEffect(() => {
+  loadDoctorId();
+}, [loadDoctorId]);
 
   // Fetch availability once doctorId is loaded
-  useEffect(() => {
-    if (doctorId) fetchAvailability();
-  }, [doctorId]);
+useEffect(() => {
+  fetchAvailability();
+}, [fetchAvailability]);
+
 
   return (
     <Box maxWidth="700px" mx="auto" mt={5}>
