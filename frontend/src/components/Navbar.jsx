@@ -91,7 +91,7 @@ const Navbar = () => {
                       <FaUserCircle className="me-1" /> Dashboard
                     </Nav.Link>
 
-                    <Nav.Link as={Link} to="/patient/appointments">
+                    <Nav.Link as={Link} to="/patient/view-appointments">
                       <FaCalendarAlt className="me-1" /> My Appointments
                     </Nav.Link>
 

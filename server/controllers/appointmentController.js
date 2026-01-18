@@ -311,7 +311,7 @@ export const getAppointmentsByDoctor = async (req, res) => {
     res.json(formatted);
   } catch (err) {
     console.error("Error fetching appointments:", err);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Server error" });``
   }
 };
 export const updateAppointmentStatus = async (req, res) => {

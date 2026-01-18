@@ -162,5 +162,4 @@ const ViewAppointments = () => {
     </Box>
   );
 };
-
 export default ViewAppointments;

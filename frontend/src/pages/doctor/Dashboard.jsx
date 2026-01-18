@@ -117,7 +117,6 @@ export default function DoctorDashboard() {
       <Typography variant="h4" align="center" sx={{ mb: 4, fontWeight: 700 }}>
         Doctor Dashboard
       </Typography>
-
       {/* ===================== STATS ===================== */}
       <Grid container spacing={3}>
         <Grid item xs={12} md={3}>
