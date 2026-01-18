@@ -3,13 +3,11 @@ import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { login as apiLogin } from "../api/auth";
-import { setAuthData } from "../utils/auth";
 import { useAuth } from "../context/AuthContext";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const { setUser, fetchProfile } = useAuth();
   const [error, setError] = useState(null);
   const navigate = useNavigate();
   const { login } = useAuth();   // ✅ use login() method from context

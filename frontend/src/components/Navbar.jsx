@@ -4,7 +4,6 @@ import {
   Navbar as BootstrapNavbar,
   Container,
   Nav,
-  Button,
   NavDropdown,
 } from "react-bootstrap";
 import { Link, useNavigate } from "react-router-dom";
@@ -15,7 +14,6 @@ import {
   FaUserMd,
   FaCalendarAlt,
   FaClock,
-  FaHospitalUser,
   FaHome,
 } from "react-icons/fa";
 

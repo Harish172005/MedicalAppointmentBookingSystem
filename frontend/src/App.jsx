@@ -2,9 +2,8 @@
 import React from "react";
 import { BrowserRouter, useLocation } from "react-router-dom";
 import AppRoutes from "./routes/AppRoutes";
-import { AuthProvider, useAuth } from "./context/AuthContext";
+import { AuthProvider } from "./context/AuthContext";
 import Navbar from "./components/Navbar";
-import Sidebar from "./components/Sidebar";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 function AppContent() {
