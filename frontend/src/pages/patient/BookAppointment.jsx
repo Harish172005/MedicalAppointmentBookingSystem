@@ -20,12 +20,12 @@ export default function BookAppointment() {
     const fetchDoctorAndSlots = async () => {
       try {
         // 1. Fetch doctor info
-        const res = await axios.get(`http://localhost:5000/api/doctor/${doctorId}`);
+        const res = await axios.get(`${process.env.REACT_APP_API_URL}/doctor/${doctorId}`);
         setDoctor(res.data);
 
         // 2. Fetch doctor's availability
         const slotsRes = await axios.get(
-          `http://localhost:5000/api/availability/${doctorId}`,
+          `${process.env.REACT_APP_API_URL}/availability/${doctorId}`,
           {
             headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
           }
@@ -53,7 +53,7 @@ export default function BookAppointment() {
           date,
           timeSlot);
       await axios.post(
-        "http://localhost:5000/api/appointments/bookAppointment",
+        `${process.env.REACT_APP_API_URL}/appointments/bookAppointment`,
         {
           doctorId,
           patientId,

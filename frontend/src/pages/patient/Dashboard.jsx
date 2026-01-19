@@ -1,5 +1,5 @@
 // src/pages/patient/PatientDashboard.jsx
-import React, {useCallback, useEffect, useState } from "react";
+import React, {useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import {
@@ -62,6 +62,10 @@ export default function PatientDashboard() {
     setSelectedDoctor(doctor);
     setShowModal(true);
   };
+  useEffect(() => {
+  fetchDoctors();
+}, [fetchDoctors]);
+
 
   const handleBookAppointment = (doctorId) => {
     navigate(`/patient/book-appointment?doctorId=${doctorId}`);
@@ -138,7 +142,12 @@ export default function PatientDashboard() {
                   <CardMedia
                     component="img"
                     height="240"
-                    image={doctor.idProof ?  `http://localhost:5000/${doctor.idProof.replace(/^\/+/, "")}` : "/default-doctor.jpg"}
+                    image={
+  doctor.idProof
+    ? `${process.env.REACT_APP_API_URL}/${doctor.idProof.replace(/^\/+/, "")}`
+    : "/default-doctor.jpg"
+}
+
                     alt={doctor.name || "Doctor"}
                     sx={{
                       transition: "transform 0.3s ease-in-out",

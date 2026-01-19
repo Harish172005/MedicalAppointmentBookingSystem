@@ -7,7 +7,7 @@ import Navbar from "./components/Navbar";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 function AppContent() {
-  const location = useLocation();
+  
   
   return (
     <div style={{ display: "flex" }}>
