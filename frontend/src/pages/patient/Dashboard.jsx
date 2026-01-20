@@ -46,15 +46,20 @@ export default function PatientDashboard() {
       { params }
     );
 
-    setDoctors(res.data);
+    const doctorList = Array.isArray(res.data)
+      ? res.data
+      : res.data.doctors || [];
 
-    const specs = [...new Set(res.data.map(doc => doc.specialization))];
-    const regs = [...new Set(res.data.map(doc => doc.region))];
+    setDoctors(doctorList);
+
+    const specs = [...new Set(doctorList.map(doc => doc.specialization))];
+    const regs = [...new Set(doctorList.map(doc => doc.region))];
 
     setSpecializations(specs);
     setRegions(regs);
   } catch (err) {
     console.error("Error fetching doctors:", err);
+    setDoctors([]);
   }
 }, [filterSpecialization, filterRegion, filterExperience]);
 
@@ -203,7 +208,11 @@ export default function PatientDashboard() {
               <Stack direction="row" spacing={2} mb={2}>
                 <Box flex={1}>
                   <img
-                    src={selectedDoctor.idProof ?  `http://localhost:5000/${selectedDoctor.idProof.replace(/^\/+/, "")}` : "/default-doctor.jpg"}
+                   src={
+  selectedDoctor.idProof
+    ? `${process.env.REACT_APP_API_URL}/${selectedDoctor.idProof.replace(/^\/+/, "")}`
+    : "/default-doctor.jpg"
+}
                     alt={selectedDoctor.name || "Doctor"}
                     style={{ width: "100%", borderRadius: "8px" }}
                   />
