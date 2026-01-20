@@ -1,6 +1,6 @@
 // src/App.js
 import React from "react";
-import { BrowserRouter, useLocation } from "react-router-dom";
+import { BrowserRouter} from "react-router-dom";
 import AppRoutes from "./routes/AppRoutes";
 import { AuthProvider } from "./context/AuthContext";
 import Navbar from "./components/Navbar";
