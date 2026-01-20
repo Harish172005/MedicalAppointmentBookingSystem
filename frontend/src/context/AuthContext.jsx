@@ -16,9 +16,10 @@ export const AuthProvider = ({ children }) => {
       if (token && storedUser) {
         try {
           // Verify token with backend
-          const res = await axios.get("http://localhost:5000/api/auth/verify", {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          axios.get(`${process.env.REACT_APP_API_URL}/api/auth/verify`, {
+  withCredentials: true,
+});
+
 
           if (res.data?.valid) {
             setUser(JSON.parse(storedUser));
