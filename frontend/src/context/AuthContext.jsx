@@ -16,7 +16,7 @@ export const AuthProvider = ({ children }) => {
       if (token && storedUser) {
         try {
           // Verify token with backend
-          axios.get(`${process.env.REACT_APP_API_URL}/api/auth/verify`, {
+        const res =  axios.get(`${process.env.REACT_APP_API_URL}/api/auth/verify`, {
   withCredentials: true,
 });
 
