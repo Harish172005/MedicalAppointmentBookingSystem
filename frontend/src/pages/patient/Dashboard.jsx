@@ -46,11 +46,20 @@ export default function PatientDashboard() {
       { params }
     );
 
-    const doctorList = Array.isArray(res.data)
-      ? res.data
-      : res.data.doctors || [];
+    let doctorList = [];
 
-    setDoctors(doctorList);
+if (Array.isArray(res.data)) {
+  doctorList = res.data;
+} else if (Array.isArray(res.data.data)) {
+  doctorList = res.data.data;
+} else if (Array.isArray(res.data.doctors)) {
+  doctorList = res.data.doctors;
+} else {
+  doctorList = [];
+}
+
+setDoctors(doctorList);
+console.log("Fetched doctors:", doctorList);
 
     const specs = [...new Set(doctorList.map(doc => doc.specialization))];
     const regs = [...new Set(doctorList.map(doc => doc.region))];
