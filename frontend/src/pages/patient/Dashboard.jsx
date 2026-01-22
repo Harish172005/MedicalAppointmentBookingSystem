@@ -33,7 +33,8 @@ export default function PatientDashboard() {
 
   const navigate = useNavigate();
 
-  const fetchDoctors = useCallback(async () => {
+ const fetchDoctors = useCallback(async () => {
+  try {
     const params = {};
     if (filterSpecialization) params.specialization = filterSpecialization;
     if (filterRegion) params.region = filterRegion;
@@ -44,10 +45,21 @@ export default function PatientDashboard() {
       { params }
     );
 
-    setDoctors(res.data);
-    setSpecializations([...new Set(res.data.map(d => d.specialization))]);
-    setRegions([...new Set(res.data.map(d => d.region))]);
-  }, [filterSpecialization, filterRegion, filterExperience]);
+    // GUARANTEE array
+    const data = Array.isArray(res.data) ? res.data : [];
+
+    setDoctors(data);
+    setSpecializations([...new Set(data.map(d => d.specialization).filter(Boolean))]);
+    setRegions([...new Set(data.map(d => d.region).filter(Boolean))]);
+
+  } catch (error) {
+    console.error("Failed to fetch doctors:", error);
+    setDoctors([]);
+    setSpecializations([]);
+    setRegions([]);
+  }
+}, [filterSpecialization, filterRegion, filterExperience]);
+
 
   useEffect(() => {
     fetchDoctors();
