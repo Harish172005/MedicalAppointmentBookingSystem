@@ -1,246 +1,268 @@
-import React, { useCallback, useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import {
-  Box,
-  Container,
-  Grid,
-  Card,
-  CardMedia,
-  CardContent,
-  Typography,
-  Button,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Modal,
-  Chip,
-  Divider,
-} from "@mui/material";
+// controllers/doctorController.js
+import Doctor from "../models/Doctor.js";
+import User from "../models/User.js";
+import Availability from "../models/Availability.js";
 
-export default function PatientDashboard() {
-  const [doctors, setDoctors] = useState([]);
-  const [selectedDoctor, setSelectedDoctor] = useState(null);
-  const [showModal, setShowModal] = useState(false);
+/**
+ * @desc Get all unique specializations
+ */
+export const getSpecializations = async (req, res) => {
+  try {
+    const specializations = await Doctor.distinct("specialization");
+    res.json(specializations);
+  } catch (error) {
+    console.error("Error fetching specializations:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
 
-  const [specializations, setSpecializations] = useState([]);
-  const [regions, setRegions] = useState([]);
+/**
+ * @desc Get doctors by specialization
+ */
 
-  const [filterSpecialization, setFilterSpecialization] = useState("");
-  const [filterRegion, setFilterRegion] = useState("");
-  const [filterExperience, setFilterExperience] = useState("");
+export const getDoctorsBySpecialization = async (req, res) => {
+  try {
+    const { specialization } = req.params;
 
-  const navigate = useNavigate();
+    const doctors = await Doctor.find({
+      specialization: { $regex: `^${specialization}$`, $options: "i" }
+    })
+      .populate("user", "name email phone")  // add more user fields
+      .select("specialization Experience"); // doctor fields you need
 
-  const fetchDoctors = useCallback(async () => {
-    const params = {};
-    if (filterSpecialization) params.specialization = filterSpecialization;
-    if (filterRegion) params.region = filterRegion;
-    if (filterExperience) params.experience = filterExperience;
+    res.json(doctors);
 
-    const res = await axios.get(
-      `${process.env.REACT_APP_API_URL}/api/doctor`,
-      { params }
-    );
+  } catch (error) {
+    console.error("Error fetching doctors by specialization:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
 
-    setDoctors(res.data);
-    setSpecializations([...new Set(res.data.map(d => d.specialization))]);
-    setRegions([...new Set(res.data.map(d => d.region))]);
-  }, [filterSpecialization, filterRegion, filterExperience]);
 
-  useEffect(() => {
-    fetchDoctors();
-  }, [fetchDoctors]);
 
-  return (
-    <Box>
-      {/* HERO SECTION */}
-      <Box
-        sx={{
-          background: "linear-gradient(135deg, #1976d2, #42a5f5)",
-          color: "#fff",
-          py: 8,
-          mb: 6,
-        }}
-      >
-        <Container>
-          <Typography variant="h3" fontWeight={700} gutterBottom>
-            Find the Right Doctor
-          </Typography>
-          <Typography variant="h6" sx={{ opacity: 0.9 }}>
-            Book appointments with verified specialists near you
-          </Typography>
-        </Container>
-      </Box>
 
-      <Container>
-        {/* FILTER BAR */}
-        <Card sx={{ p: 3, mb: 5, borderRadius: 3, boxShadow: 4 }}>
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={4}>
-              <FormControl fullWidth>
-                <InputLabel>Specialization</InputLabel>
-                <Select
-                  value={filterSpecialization}
-                  onChange={(e) => setFilterSpecialization(e.target.value)}
-                  label="Specialization"
-                >
-                  <MenuItem value="">All</MenuItem>
-                  {specializations.map(spec => (
-                    <MenuItem key={spec} value={spec}>{spec}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
+export const createDoctor = async (req, res) => {
+  try {
+    const {
+      name,
+      email,
+      password,
+      specialization,
+      availability
+    } = req.body;
 
-            <Grid item xs={12} md={4}>
-              <FormControl fullWidth>
-                <InputLabel>Region</InputLabel>
-                <Select
-                  value={filterRegion}
-                  onChange={(e) => setFilterRegion(e.target.value)}
-                  label="Region"
-                >
-                  <MenuItem value="">All</MenuItem>
-                  {regions.map(reg => (
-                    <MenuItem key={reg} value={reg}>{reg}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "Email already registered" });
+    }
 
-            <Grid item xs={12} md={4}>
-              <FormControl fullWidth>
-                <InputLabel>Experience</InputLabel>
-                <Select
-                  value={filterExperience}
-                  onChange={(e) => setFilterExperience(e.target.value)}
-                  label="Experience"
-                >
-                  <MenuItem value="">Any</MenuItem>
-                  <MenuItem value="1">1+ years</MenuItem>
-                  <MenuItem value="3">3+ years</MenuItem>
-                  <MenuItem value="5">5+ years</MenuItem>
-                  <MenuItem value="10">10+ years</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-          </Grid>
-        </Card>
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-        {/* DOCTOR GRID */}
-        <Grid container spacing={4}>
-          {doctors.map((doctor) => (
-            <Grid item xs={12} sm={6} md={4} key={doctor._id}>
-              <Card
-                sx={{
-                  borderRadius: 3,
-                  overflow: "hidden",
-                  transition: "0.3s",
-                  boxShadow: 4,
-                  "&:hover": {
-                    transform: "translateY(-6px)",
-                    boxShadow: 8,
-                  },
-                }}
-              >
-                <Box sx={{ position: "relative" }}>
-                  <CardMedia
-                    component="img"
-                    height="240"
-                    image={
-                      doctor.idProof
-                        ? `${process.env.REACT_APP_API_URL}/${doctor.idProof}`
-                        : "/default-doctor.jpg"
-                    }
-                  />
-                  <Chip
-                    label={doctor.specialization}
-                    sx={{
-                      position: "absolute",
-                      bottom: 12,
-                      left: 12,
-                      bgcolor: "#fff",
-                      fontWeight: 600,
-                    }}
-                  />
-                </Box>
+    const newUser = await User.create({
+      name,
+      email,
+      password: hashedPassword,
+      role: "doctor"
+    });
 
-                <CardContent>
-                  <Typography variant="h6" fontWeight={600}>
-                    {doctor.name}
-                  </Typography>
-                  <Typography color="text.secondary" gutterBottom>
-                    {doctor.region}
-                  </Typography>
+    const newDoctor = await Doctor.create({
+      user: newUser._id,
+      specialization,
+      Experience,
+      Region,
+      idProof: req.file ? req.file.filename:null // ✅ Save file path
+    });
 
-                  <Chip
-                    label={`${doctor.experience} yrs experience`}
-                    size="small"
-                    sx={{ mb: 2 }}
-                  />
+    if (Array.isArray(availability) && availability.length > 0) {
+      const availabilityDocs = availability.map(slot => ({
+        doctor: newDoctor._id,
+        date: slot.date,
+        timeSlots: slot.timeSlots
+      }));
+      await Availability.insertMany(availabilityDocs);
+    }
 
-                  <Button
-                    fullWidth
-                    variant="contained"
-                    onClick={() => {
-                      setSelectedDoctor(doctor);
-                      setShowModal(true);
-                    }}
-                  >
-                    View Profile
-                  </Button>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-      </Container>
+    res.status(201).json({
+      message: "Doctor registered successfully",
+      doctorId: newDoctor._id
+    });
+  } catch (error) {
+    console.error("Error registering doctor:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
 
-      {/* PROFILE MODAL */}
-      <Modal open={showModal} onClose={() => setShowModal(false)}>
-        <Box
-          sx={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            width: 600,
-            bgcolor: "#fff",
-            borderRadius: 3,
-            p: 4,
-          }}
-        >
-          {selectedDoctor && (
-            <>
-              <Typography variant="h5" fontWeight={700}>
-                {selectedDoctor.name}
-              </Typography>
-              <Typography color="text.secondary" mb={2}>
-                {selectedDoctor.specialization}
-              </Typography>
+export const getDoctorById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const doctor = await Doctor.findById(id).populate("user"); // <-- populate user reference
 
-              <Divider sx={{ mb: 2 }} />
+    if (!doctor) {
+      return res.status(404).json({ message: "Doctor not found" });
+    }
 
-              <Typography><strong>Email:</strong> {selectedDoctor.email}</Typography>
-              <Typography><strong>Qualification:</strong> {selectedDoctor.qualification}</Typography>
-              <Typography><strong>Region:</strong> {selectedDoctor.region}</Typography>
-              <Typography mt={2}>{selectedDoctor.bio}</Typography>
+    res.status(200).json(doctor);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
 
-              <Button
-                fullWidth
-                variant="contained"
-                size="large"
-                sx={{ mt: 3 }}
-                onClick={() => navigate(`/patient/book-appointment?doctorId=${selectedDoctor._id}`)}
-              >
-                Book Appointment
-              </Button>
-            </>
-          )}
-        </Box>
-      </Modal>
-    </Box>
-  );
-}
+// GET all doctors
+export const getAllDoctors = async (req, res) => {
+  try {
+    // Populate user details for each doctor
+    const doctors = await Doctor.find()
+      .populate("user", "name email role idProof Experience qualification description")
+      .lean();
+
+    // Format response
+    const formattedDoctors = doctors.map((doc) => ({
+      _id: doc._id,
+      name: doc.user.name,
+      email: doc.user.email,
+      specialization: doc.specialization,
+      experience: doc.Experience,
+      qualification: doc.qualification,
+      description: doc.description,
+      idProof: doc.idProof?.replace("/uploads/", "") || null
+    }));
+
+    return res.status(200).json(formattedDoctors);
+  } catch (error) {
+    console.error("Error fetching doctors:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+
+export const getDoctorProfile = async (req, res) => {
+  try {
+    const userId = req.user._id; // ensure auth middleware sets req.user
+    const doctor = await Doctor.findOne({ user: userId }).populate("user", "name email");
+
+    if (!doctor) {
+      return res.status(404).json({ message: "Doctor profile not found" });
+    }
+
+    return res.json({
+      _id: doctor._id,
+      specialization: doctor.specialization || "",
+      Experience: doctor.Experience || "",
+      Region: doctor.Region || "",
+      idProof: doctor.idProof || "",
+      user: {
+        name: doctor.user?.name || "",
+        email: doctor.user?.email || ""
+      }
+    });
+  } catch (err) {
+    console.error("Error fetching doctor profile:", err);
+    return res.status(500).json({ message: "Server error", details: err.message });
+  }
+};
+export const getRegions = async (req, res) => {
+  try {
+    const regions = await Doctor.distinct("Region");  // Field name in schema
+
+    res.status(200).json(regions);
+  } catch (error) {
+    console.error("Error fetching regions:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+export const getDoctors = async (req, res) => {
+  try {
+    const { region, specialization, experience } = req.query;
+
+    const filter = {};
+    if (region) filter.Region = region;
+    if (specialization) filter.specialization = specialization;
+    if (experience) {
+      const minExp = parseInt(experience);
+      filter.Experience = { $regex: new RegExp(`^(${minExp}|[${minExp}-9][0-9]*)`) };
+    }
+
+    const doctors = await Doctor.find(filter)
+      .populate("user", "name email") // ensure user has name + email
+      .lean();
+
+    // Format consistently
+    const formattedDoctors = doctors.map((doc) => ({
+      _id: doc._id,
+      name: doc.user?.name || "No Name",
+      email: doc.user?.email || "No Email",
+      specialization: doc.specialization || "N/A",
+      experience: doc.Experience || "N/A",
+      qualification: doc.qualification || "N/A",
+      region: doc.Region || "N/A",
+      bio: doc.bio || "",
+      idProof: doc.idProof || null,
+    }));
+
+    res.status(200).json(formattedDoctors);
+  } catch (error) {
+    console.error("Error fetching doctors:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+export const updateDoctor = async (req, res) => {
+  try {
+    const { id } = req.params; // doctorId
+
+    const {
+      name,
+      email,
+      phone,
+      gender,
+      specialization,
+      qualification,
+      experience,
+      region,
+      bio
+    } = req.body;
+
+    // If updating file (idProof), check req.file
+    const idProof = req.file ? `/uploads/${req.file.filename}` : null;
+
+    // 1️⃣ Fetch doctor by ID
+    const doctor = await Doctor.findById(id).populate("user");
+    if (!doctor) {
+      return res.status(404).json({ message: "Doctor not found" });
+    }
+    const user = doctor.user;
+    // 2️⃣ Update User details
+    if (name) user.name = name;
+    if (email) user.email = email;
+    if (phone) user.phone = phone;
+    if (gender) user.gender = gender;
+
+
+    await user.save();
+
+    // 3️⃣ Update Doctor details
+    if (specialization) doctor.specialization = specialization;
+    if (qualification) doctor.qualification = qualification;
+    if (experience) doctor.Experience = experience;
+    if (region) doctor.Region = region;
+    if (bio) doctor.bio = bio;
+
+    // Update ID proof only if new file uploaded
+    if (idProof) doctor.idProof = idProof;
+
+    await doctor.save();
+
+    res.json({
+      message: "Doctor updated successfully",
+      doctor
+    });
+
+  } catch (error) {
+    console.error("Error updating doctor:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
