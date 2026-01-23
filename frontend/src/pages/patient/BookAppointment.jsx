@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Container, Card, Button, Form, Row, Col } from "react-bootstrap";
+import API from "../../utils/axios";
 
 export default function BookAppointment() {
   const [doctor, setDoctor] = useState(null);
