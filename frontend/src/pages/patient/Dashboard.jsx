@@ -41,7 +41,7 @@ export default function PatientDashboard() {
     if (filterExperience) params.experience = filterExperience;
 
     const res = await axios.get(
-      `${process.env.REACT_APP_API_URL}/api/doctor`,
+      `${process.env.REACT_APP_API_BASE_URL}/api/doctor`,
       { params }
     );
 
@@ -50,7 +50,7 @@ export default function PatientDashboard() {
 
     setDoctors(data);
     setSpecializations([...new Set(data.map(d => d.specialization).filter(Boolean))]);
-    setRegions([...new Set(data.map(d => d.region).filter(Boolean))]);
+    setRegions([...new Set(data.map(d => d.Region).filter(Boolean))]);
 
   } catch (error) {
     console.error("Failed to fetch doctors:", error);
