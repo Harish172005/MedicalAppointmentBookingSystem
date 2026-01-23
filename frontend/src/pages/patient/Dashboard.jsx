@@ -41,7 +41,7 @@ export default function PatientDashboard() {
     if (filterExperience) params.experience = filterExperience;
 
     const res = await API.get(
-    `/api/doctor`,
+    `/doctor`,
       { params }
     );
 
