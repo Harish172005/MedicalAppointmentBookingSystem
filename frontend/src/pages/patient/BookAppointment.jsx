@@ -1,7 +1,7 @@
 // src/pages/patient/BookAppointment.jsx
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import axios from "axios";
+
 import { Container, Card, Button, Form, Row, Col } from "react-bootstrap";
 import API from "../../utils/axios";
 
@@ -21,12 +21,12 @@ export default function BookAppointment() {
     const fetchDoctorAndSlots = async () => {
       try {
         // 1. Fetch doctor info
-        const res = await axios.get(`${process.env.REACT_APP_API_URL}/doctor/${doctorId}`);
+        const res = await API.get(`/doctor/${doctorId}`);
         setDoctor(res.data);
 
         // 2. Fetch doctor's availability
-        const slotsRes = await axios.get(
-          `${process.env.REACT_APP_API_URL}/availability/${doctorId}`,
+        const slotsRes = await API.get(
+          `availability/${doctorId}`,
           {
             headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
           }
