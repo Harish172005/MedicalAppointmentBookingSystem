@@ -18,6 +18,7 @@ import {
   Chip,
   Divider,
 } from "@mui/material";
+import API from "../../utils/axios";
 
 export default function PatientDashboard() {
   const [doctors, setDoctors] = useState([]);
@@ -40,8 +41,8 @@ export default function PatientDashboard() {
     if (filterRegion) params.region = filterRegion;
     if (filterExperience) params.experience = filterExperience;
 
-    const res = await axios.get(
-      `${process.env.REACT_APP_API_BASE_URL}/api/doctor`,
+    const res = await API.get(
+    `/api/doctor`,
       { params }
     );
 
@@ -163,7 +164,7 @@ export default function PatientDashboard() {
                     height="240"
                     image={
                       doctor.idProof
-                        ? `${process.env.REACT_APP_API_URL}/${doctor.idProof}`
+                        ? `${process.env.REACT_APP_BASE_API_URL}/${doctor.idProof}`
                         : "/default-doctor.jpg"
                     }
                   />

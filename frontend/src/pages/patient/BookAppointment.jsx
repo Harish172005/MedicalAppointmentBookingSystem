@@ -52,8 +52,8 @@ export default function BookAppointment() {
           patientId,
           date,
           timeSlot);
-      await axios.post(
-        `${process.env.REACT_APP_API_URL}/appointments/bookAppointment`,
+      await API.post(
+        `appointments/bookAppointment`,
         {
           doctorId,
           patientId,
