@@ -18,6 +18,7 @@ import {
   Divider,
 } from "@mui/material";
 import API from "../../utils/axios";
+import { BASE_URL } from "../../utils/axios";
 
 export default function PatientDashboard() {
   const [doctors, setDoctors] = useState([]);
@@ -163,7 +164,7 @@ export default function PatientDashboard() {
                     height="240"
                     image={
                       doctor.idProof
-                        ? `${process.env.REACT_APP_BASE_API_URL}/${doctor.idProof}`
+                        ? `${BASE_URL}/${doctor.idProof}`
                         : "/default-doctor.jpg"
                     }
                   />
