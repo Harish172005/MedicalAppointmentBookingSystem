@@ -51,7 +51,7 @@ export default function PatientDashboard() {
 
     setDoctors(data);
     setSpecializations([...new Set(data.map(d => d.specialization).filter(Boolean))]);
-    setRegions([...new Set(data.map(d => d.Region).filter(Boolean))]);
+    setRegions([...new Set(data.map(d => d.region).filter(Boolean))]);
 
   } catch (error) {
     console.error("Failed to fetch doctors:", error);
@@ -164,7 +164,7 @@ export default function PatientDashboard() {
                     height="240"
                     image={
                       doctor.idProof
-                        ? `${BASE_URL}/${doctor.idProof}`
+                        ? `${BASE_URL}/${doctor.idProof.replace(/^\/+/, "")}`
                         : "/default-doctor.jpg"
                     }
                   />
@@ -227,6 +227,15 @@ export default function PatientDashboard() {
         >
           {selectedDoctor && (
             <>
+              <CardMedia
+                    component="img"
+                    height="240"
+                    image={
+                      doctor.idProof
+                        ? `${BASE_URL}/${selectedDoctor.idProof.replace(/^\/+/, "")}`
+                        : "/default-doctor.jpg"
+                    }
+                  />
               <Typography variant="h5" fontWeight={700}>
                 {selectedDoctor.name}
               </Typography>
