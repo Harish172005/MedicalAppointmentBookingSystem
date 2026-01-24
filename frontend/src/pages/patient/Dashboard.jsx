@@ -52,7 +52,6 @@ export default function PatientDashboard() {
     setDoctors(data);
     setSpecializations([...new Set(data.map(d => d.specialization).filter(Boolean))]);
     setRegions([...new Set(data.map(d => d.region).filter(Boolean))]);
-
   } catch (error) {
     console.error("Failed to fetch doctors:", error);
     setDoctors([]);
