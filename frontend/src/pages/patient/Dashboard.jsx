@@ -231,7 +231,7 @@ export default function PatientDashboard() {
                     component="img"
                     height="240"
                     image={
-                      doctor.idProof
+                      selectedDoctor.idProof
                         ? `${BASE_URL}/${selectedDoctor.idProof.replace(/^\/+/, "")}`
                         : "/default-doctor.jpg"
                     }
