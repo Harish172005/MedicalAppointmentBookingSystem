@@ -19,14 +19,27 @@ import Login from "../pages/Login";
 import Register from "../pages/Register";
 
 const ProtectedRoute = ({ children, allowedRole }) => {
-  const { user } = useAuth();
-  if (!user) return <Navigate to="/login" replace />;
-  if (allowedRole && user.role !== allowedRole) return <Navigate to="/" replace />;
+  const { user, loading } = useAuth();
+
+  // ✅ Prevent redirect while auth is loading
+  if (loading) return null; // or loader component
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (allowedRole && user.role !== allowedRole) {
+    // ✅ Redirect to correct dashboard instead of "/"
+    return <Navigate to={`/${user.role}/dashboard`} replace />;
+  }
+
   return children;
 };
 
 const AppRoutes = () => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+
+  if (loading) return null; // or loader
 
   return (
     <Routes>
@@ -113,6 +126,9 @@ const AppRoutes = () => {
           )
         }
       />
+
+      {/* Catch-all (optional but recommended) */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 };

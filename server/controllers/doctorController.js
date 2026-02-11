@@ -48,7 +48,9 @@ export const createDoctor = async (req, res) => {
       email,
       password,
       specialization,
-      availability
+      availability,
+      Experience,
+      Region
     } = req.body;
 
     const existingUser = await User.findOne({ email });
