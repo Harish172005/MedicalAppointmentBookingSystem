@@ -1,15 +1,18 @@
-// src/components/auth/Register.jsx
 import React, { useState } from "react";
 import { register } from "../api/auth";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 
 export default function Register() {
+  const navigate = useNavigate();
+
+  const [loading, setLoading] = useState(false);
+
   const [form, setForm] = useState({
     name: "",
     email: "",
     password: "",
-    role: "",
+    role: "patient",
     specialization: "",
     Experience: "",
     Region: "",
@@ -22,8 +25,6 @@ export default function Register() {
     slot: "",
   });
 
-  const navigate = useNavigate();
-
   const specializationsList = [
     "Cardiology",
     "Dermatology",
@@ -35,40 +36,61 @@ export default function Register() {
 
   const timeSlotsList = ["09:00 AM", "11:00 AM", "02:00 PM", "04:00 PM"];
 
+  /* ---------------- HANDLERS ---------------- */
+
   const handleChange = (e) => {
     const { name, value, files } = e.target;
+
     if (name === "idProof") {
-      setForm({ ...form, idProof: files[0] });
+      setForm((prev) => ({ ...prev, idProof: files[0] }));
     } else {
-      setForm({ ...form, [name]: value });
+      setForm((prev) => ({ ...prev, [name]: value }));
     }
   };
 
   const handleAddAvailability = () => {
     if (!availabilityInput.date || !availabilityInput.slot) return;
 
-    const existing = form.availability.find(
-      (av) => av.date === availabilityInput.date
-    );
+    setForm((prev) => {
+      const existing = prev.availability.find(
+        (a) => a.date === availabilityInput.date
+      );
 
-    if (existing) {
-      if (!existing.slots.includes(availabilityInput.slot)) {
-        existing.slots.push(availabilityInput.slot);
+      let updatedAvailability;
+
+      if (existing) {
+        updatedAvailability = prev.availability.map((a) =>
+          a.date === availabilityInput.date
+            ? {
+                ...a,
+                slots: a.slots.includes(availabilityInput.slot)
+                  ? a.slots
+                  : [...a.slots, availabilityInput.slot],
+              }
+            : a
+        );
+      } else {
+        updatedAvailability = [
+          ...prev.availability,
+          { date: availabilityInput.date, slots: [availabilityInput.slot] },
+        ];
       }
-    } else {
-      form.availability.push({
-        date: availabilityInput.date,
-        slots: [availabilityInput.slot],
-      });
-    }
 
-    setForm({ ...form });
+      return { ...prev, availability: updatedAvailability };
+    });
+
     setAvailabilityInput({ date: "", slot: "" });
   };
 
+  /* ---------------- SUBMIT ---------------- */
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return;
+
     try {
+      setLoading(true);
+
       const formData = new FormData();
       formData.append("name", form.name);
       formData.append("email", form.email);
@@ -84,41 +106,66 @@ export default function Register() {
       }
 
       const res = await register(formData);
-      localStorage.setItem("token", res.data.token);
-      alert("Registration Successful!");
 
+      // 🔴 IMPORTANT: check backend success flag
+      if (!res.data?.success) {
+        alert(res.data?.message || "Registration failed");
+        return;
+      }
+
+      // Store token only if backend sends it
+      if (res.data.token) {
+        localStorage.setItem("token", res.data.token);
+      }
+
+      alert(res.data.message || "Registration successful");
+
+      // Navigate ONLY on success
       navigate(
-        form.role === "doctor" ? "/doctor/dashboard" : "/patient/dashboard"
+        form.role === "doctor"
+          ? "/doctor/dashboard"
+          : "/patient/dashboard"
       );
     } catch (err) {
       console.error("Register failed:", err.response?.data || err.message);
-      alert("Registration failed. Try again!");
+      alert(err.response?.data?.message || "Registration failed. Try again!");
+    } finally {
+      setLoading(false);
     }
   };
 
-  return (
-    <div className="min-vh-100 d-flex align-items-center justify-content-center" style={{
-      background: "linear-gradient(135deg, #e1f5fe 0%, #b3e5fc 50%, #81d4fa 100%)",
-    }}>
-      <motion.div className="card shadow-lg border-0" style={{
-        maxWidth: 480,
-        width: "100%",
-        borderRadius: "20px",
-        background: "rgba(255, 255, 255, 0.9)",
-      }}
-      initial={{ opacity: 0, y: 80 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.8 }}>
-        <div className="card-body p-5">
+  /* ---------------- UI ---------------- */
 
-          <motion.h3 className="text-center mb-4 fw-bold"
-            initial={{ opacity: 0, y: -30 }}
-            animate={{ opacity: 1, y: 0 }}>
+  return (
+    <div
+      className="min-vh-100 d-flex align-items-center justify-content-center"
+      style={{
+        background:
+          "linear-gradient(135deg, #e1f5fe 0%, #b3e5fc 50%, #81d4fa 100%)",
+      }}
+    >
+      <motion.div
+        className="card shadow-lg border-0"
+        style={{
+          maxWidth: 480,
+          width: "100%",
+          borderRadius: "20px",
+          background: "rgba(255, 255, 255, 0.95)",
+        }}
+        initial={{ opacity: 0, y: 80 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7 }}
+      >
+        <div className="card-body p-5">
+          <motion.h3
+            className="text-center mb-4 fw-bold"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
             Create Your Account
           </motion.h3>
 
           <form onSubmit={handleSubmit}>
-            {/* Full Name */}
             <input
               name="name"
               value={form.name}
@@ -128,7 +175,6 @@ export default function Register() {
               required
             />
 
-            {/* Email */}
             <input
               name="email"
               value={form.email}
@@ -139,7 +185,6 @@ export default function Register() {
               required
             />
 
-            {/* Password */}
             <input
               name="password"
               value={form.password}
@@ -150,14 +195,16 @@ export default function Register() {
               required
             />
 
-            {/* Role Selector */}
-            <select name="role" value={form.role} onChange={handleChange}
-              className="form-select mb-3">
+            <select
+              name="role"
+              value={form.role}
+              onChange={handleChange}
+              className="form-select mb-3"
+            >
               <option value="patient">Patient</option>
               <option value="doctor">Doctor</option>
             </select>
 
-            {/* Doctor-specific fields */}
             {form.role === "doctor" && (
               <>
                 <select
@@ -168,8 +215,10 @@ export default function Register() {
                   required
                 >
                   <option value="">Select Specialization</option>
-                  {specializationsList.map((spec, idx) => (
-                    <option key={idx} value={spec}>{spec}</option>
+                  {specializationsList.map((spec) => (
+                    <option key={spec} value={spec}>
+                      {spec}
+                    </option>
                   ))}
                 </select>
 
@@ -178,7 +227,7 @@ export default function Register() {
                   value={form.Experience}
                   onChange={handleChange}
                   className="form-control mb-3"
-                  placeholder="Experience (e.g., 5 years)"
+                  placeholder="Experience (years)"
                   required
                 />
 
@@ -187,11 +236,10 @@ export default function Register() {
                   value={form.Region}
                   onChange={handleChange}
                   className="form-control mb-3"
-                  placeholder="Region (e.g., Chennai)"
+                  placeholder="Region"
                   required
                 />
 
-                {/* ID Proof */}
                 <input
                   name="idProof"
                   type="file"
@@ -201,28 +249,38 @@ export default function Register() {
                   required
                 />
 
-                {/* Availability */}
                 <div className="d-flex gap-2 mb-2">
-                  <input type="date" className="form-control"
+                  <input
+                    type="date"
+                    className="form-control"
                     value={availabilityInput.date}
                     onChange={(e) =>
-                      setAvailabilityInput({ ...availabilityInput, date: e.target.value })
+                      setAvailabilityInput({
+                        ...availabilityInput,
+                        date: e.target.value,
+                      })
                     }
                   />
                   <select
                     className="form-select"
                     value={availabilityInput.slot}
                     onChange={(e) =>
-                      setAvailabilityInput({ ...availabilityInput, slot: e.target.value })
+                      setAvailabilityInput({
+                        ...availabilityInput,
+                        slot: e.target.value,
+                      })
                     }
                   >
-                    <option>Select Time Slot</option>
+                    <option value="">Select Slot</option>
                     {timeSlotsList.map((slot) => (
                       <option key={slot}>{slot}</option>
                     ))}
                   </select>
-                  <button type="button" className="btn btn-primary"
-                    onClick={handleAddAvailability}>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={handleAddAvailability}
+                  >
                     Add
                   </button>
                 </div>
@@ -239,8 +297,12 @@ export default function Register() {
               </>
             )}
 
-            <button className="btn btn-primary w-100 py-2" type="submit">
-              Register
+            <button
+              className="btn btn-primary w-100 py-2"
+              type="submit"
+              disabled={loading}
+            >
+              {loading ? "Registering..." : "Register"}
             </button>
 
             <p className="text-center mt-3">
@@ -252,4 +314,3 @@ export default function Register() {
     </div>
   );
 }
-
